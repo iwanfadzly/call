@@ -11,7 +11,7 @@ export class Retell {
       phoneNumber: string
       agentId: string
       webhookUrl?: string
-      metadata?: any
+      metadata?: Record<string, unknown>
     }) => {
       // Mock call creation
       const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -44,7 +44,7 @@ export class Retell {
       }
     },
 
-    list: async (params?: any) => {
+    list: async (params?: Record<string, unknown>) => {
       return {
         data: [],
         hasMore: false
@@ -53,7 +53,7 @@ export class Retell {
   }
 
   agents = {
-    create: async (params: any) => {
+    create: async (params: Record<string, unknown>) => {
       const agentId = `agent_${Date.now()}`
       return {
         id: agentId,

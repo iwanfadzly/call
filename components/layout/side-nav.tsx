@@ -7,7 +7,7 @@ import { buttonVariants } from "@/components/ui/button"
 import { Icons } from "@/components/icons"
 import { useSession } from "next-auth/react"
 
-interface SideNavProps extends React.HTMLAttributes<HTMLElement> {}
+interface SideNavProps extends React.HTMLAttributes<HTMLElement> { className?: string }
 
 export function SideNav({ className, ...props }: SideNavProps) {
   const pathname = usePathname()

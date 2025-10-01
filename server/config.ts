@@ -6,29 +6,29 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   
   // Redis
-  REDIS_URL: z.string().url(),
+  REDIS_URL: z.string().url().optional(),
   
   // Authentication
   NEXTAUTH_URL: z.string().url(),
   NEXTAUTH_SECRET: z.string(),
-  GOOGLE_CLIENT_ID: z.string(),
-  GOOGLE_CLIENT_SECRET: z.string(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
   
-  // AI Services
-  OPENAI_API_KEY: z.string(),
-  RETELL_API_KEY: z.string(),
+  // AI Services (optional for development)
+  OPENAI_API_KEY: z.string().optional(),
+  RETELL_API_KEY: z.string().optional(),
   
-  // Twilio
-  TWILIO_ACCOUNT_SID: z.string(),
-  TWILIO_AUTH_TOKEN: z.string(),
-  TWILIO_PHONE_NUMBER: z.string(),
+  // Twilio (optional for development)
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_PHONE_NUMBER: z.string().optional(),
   
-  // WhatsApp
-  WASAPBOT_ENDPOINT: z.string().url(),
-  WASAPBOT_API_KEY: z.string(),
+  // WhatsApp (optional for development)
+  WASAPBOT_ENDPOINT: z.string().url().optional(),
+  WASAPBOT_API_KEY: z.string().optional(),
   
-  // Payment Providers
-  PAYMENT_PROVIDER: z.enum(['STRIPE', 'BILLPLZ', 'TOYYIBPAY']),
+  // Payment Providers (optional for development)
+  PAYMENT_PROVIDER: z.enum(['STRIPE', 'BILLPLZ', 'TOYYIBPAY']).optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   BILLPLZ_SECRET_KEY: z.string().optional(),
@@ -56,40 +56,40 @@ export const config = {
   },
   
   redis: {
-    url: env.REDIS_URL,
+    url: env.REDIS_URL || 'redis://localhost:6379',
   },
   
   auth: {
     url: env.NEXTAUTH_URL,
     secret: env.NEXTAUTH_SECRET,
     google: {
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      clientId: env.GOOGLE_CLIENT_ID || '',
+      clientSecret: env.GOOGLE_CLIENT_SECRET || '',
     },
   },
   
   ai: {
     openai: {
-      apiKey: env.OPENAI_API_KEY,
+      apiKey: env.OPENAI_API_KEY || '',
     },
     retell: {
-      apiKey: env.RETELL_API_KEY,
+      apiKey: env.RETELL_API_KEY || '',
     },
   },
   
   twilio: {
-    accountSid: env.TWILIO_ACCOUNT_SID,
-    authToken: env.TWILIO_AUTH_TOKEN,
-    phoneNumber: env.TWILIO_PHONE_NUMBER,
+    accountSid: env.TWILIO_ACCOUNT_SID || '',
+    authToken: env.TWILIO_AUTH_TOKEN || '',
+    phoneNumber: env.TWILIO_PHONE_NUMBER || '',
   },
   
   whatsapp: {
-    endpoint: env.WASAPBOT_ENDPOINT,
-    apiKey: env.WASAPBOT_API_KEY,
+    endpoint: env.WASAPBOT_ENDPOINT || 'http://localhost:3000/wasapbot/sendMessage',
+    apiKey: env.WASAPBOT_API_KEY || '',
   },
   
   payments: {
-    provider: env.PAYMENT_PROVIDER,
+    provider: env.PAYMENT_PROVIDER || 'STRIPE',
     stripe: env.STRIPE_SECRET_KEY ? {
       secretKey: env.STRIPE_SECRET_KEY,
       webhookSecret: env.STRIPE_WEBHOOK_SECRET,

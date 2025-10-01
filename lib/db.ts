@@ -93,7 +93,7 @@ export async function createLeadActivity(
   type: string,
   title: string,
   content: string,
-  metadata?: any
+  metadata?: Record<string, unknown>
 ) {
   return await prisma.leadActivity.create({
     data: {

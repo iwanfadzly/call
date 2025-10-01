@@ -39,7 +39,7 @@ export function AgentPerformance() {
 
         // Fetch stats for each agent
         const agentStats = await Promise.all(
-          agents.map(async (agent: any) => {
+          agents.map(async (agent: { id: string; name: string; email: string }) => {
             const statsResponse = await fetch(
               `/api/reports/agents/${agent.id}?` +
               `startDate=${dateRange.from.toISOString()}&` +

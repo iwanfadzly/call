@@ -48,7 +48,7 @@ export function DeleteConfirmationModal({
             {description}
             <br />
             <br />
-            <strong className="text-red-600">"{itemName}"</strong>
+            <strong className="text-red-600">&quot;{itemName}&quot;</strong>
             <br />
             <br />
             This action cannot be undone.
