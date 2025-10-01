@@ -1,0 +1,326 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Authentication Models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? 
+  access_token      String? 
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? 
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          UserRole  @default(AGENT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  callLogs CallLog[]
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  AGENT
+  VIEWER
+}
+
+// Lead Management
+model Lead {
+  id        String     @id @default(cuid())
+  name      String
+  phone     String     @unique
+  email     String?
+  tags      String?
+  status    LeadStatus @default(NEW)
+  priority  Int        @default(0)
+  source    String?
+  notes     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  callLogs    CallLog[]
+  orders      Order[]
+  waLogs      WhatsAppLog[]
+  activities  LeadActivity[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([phone])
+}
+
+enum LeadStatus {
+  NEW
+  NO_ANSWER
+  INTERESTED
+  FOLLOW_UP
+  CLOSED
+  LOST
+  DNC
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId    String
+  type      String   // CALL, EMAIL, WHATSAPP, NOTE, STATUS_CHANGE
+  title     String
+  content   String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+// Call Management
+model CallLog {
+  id          String    @id @default(cuid())
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId      String
+  user        User?     @relation(fields: [userId], references: [id])
+  userId      String?
+  provider    String    // RETELL, TWILIO
+  callId      String?   // External call ID
+  startedAt   DateTime
+  endedAt     DateTime?
+  outcome     String?   // ANSWERED, NO_ANSWER, BUSY, FAILED, INTERESTED, NOT_INTERESTED
+  transcript  String?   
+  recording   String?   // URL to recording
+  durationSec Int       @default(0)
+  cost        Float     @default(0)
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+
+  @@index([leadId])
+  @@index([startedAt])
+  @@index([outcome])
+}
+
+// Product & Knowledge Base
+model Product {
+  id          String  @id @default(cuid())
+  name        String
+  sku         String  @unique
+  description String? 
+  price       Float
+  category    String?
+  isActive    Boolean @default(true)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems OrderItem[]
+
+  @@index([sku])
+  @@index([category])
+}
+
+model KnowledgeBase {
+  id        String                 @id @default(cuid())
+  title     String
+  content   String                 
+  type      KnowledgeType
+  tags      String?
+  embedding String?
+  isActive  Boolean                @default(true)
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+
+  @@index([type])
+  @@index([tags])
+}
+
+enum KnowledgeType {
+  FAQ
+  PRODUCT_INFO
+  OBJECTION_HANDLING
+  SCRIPT
+  PRICING
+}
+
+// Order Management
+model Order {
+  id            String      @id @default(cuid())
+  orderNo       String      @unique
+  lead          Lead        @relation(fields: [leadId], references: [id])
+  leadId        String
+  totalAmount   Float
+  channel       OrderChannel
+  status        OrderStatus @default(PENDING)
+  paymentLink   String?
+  paymentMethod String?     // STRIPE, BILLPLZ, TOYYIBPAY, COD
+  shippingAddress Json?
+  notes         String?
+  metadata      Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  items     OrderItem[]
+  waLogs    WhatsAppLog[]
+  payments  Payment[]
+
+  @@index([leadId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int
+  unitPrice Float
+  totalPrice Float
+
+  @@index([orderId])
+}
+
+enum OrderChannel {
+  ONLINE
+  COD
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  COD_CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  order           Order         @relation(fields: [orderId], references: [id])
+  orderId         String
+  provider        String        // STRIPE, BILLPLZ, TOYYIBPAY
+  providerTxnId   String?
+  amount          Float
+  status          PaymentStatus @default(PENDING)
+  paymentMethod   String?
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+// WhatsApp Integration
+model WhatsAppLog {
+  id        String    @id @default(cuid())
+  lead      Lead?     @relation(fields: [leadId], references: [id])
+  leadId    String?
+  order     Order?    @relation(fields: [orderId], references: [id])
+  orderId   String?
+  phone     String
+  direction Direction
+  message   String    
+  status    MessageStatus @default(SENT)
+  messageId String?   // External message ID
+  metadata  Json?
+  timestamp DateTime  @default(now())
+
+  @@index([leadId])
+  @@index([orderId])
+  @@index([phone])
+  @@index([timestamp])
+}
+
+enum Direction {
+  OUTBOUND
+  INBOUND
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+// System Configuration
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Queue Jobs (for monitoring)
+model QueueJob {
+  id          String    @id @default(cuid())
+  jobId       String    @unique
+  queueName   String
+  jobType     String
+  data        Json
+  status      JobStatus @default(PENDING)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  error       String?   
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  processedAt DateTime?
+
+  @@index([status])
+  @@index([queueName])
+  @@index([createdAt])
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
